@@ -1,0 +1,48 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ---------- 环境变量（千万不要提交）----------
+.env
+.env.local
+.env.*.local
+
+# ---------- 数据与产物 ----------
+# 注意 git 规则：要 include 目录下某个文件，必须先 include 其父目录。
+data/*
+!data/traces/
+!data/deliverables/
+# 但默认忽略这两个目录里的所有内容，只显式放行下面的「真实模型长跑」证据
+data/traces/*
+!data/traces/tr_85e50d9c1118.json
+!data/traces/tr_094845f0d766.json
+!data/traces/tr_acb6eb6301c5.json
+!data/traces/tr_1624235a52c8.json
+data/deliverables/*
+!data/deliverables/.gitkeep
+*.db
+*.sqlite3
+data/cache/
+data/tasks/
+logs/
+*.log
+outputs/
+reports/*.md
+!reports/.gitkeep
+
+# ---------- 编辑器 ----------
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# ---------- 测试与缓存 ----------
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/

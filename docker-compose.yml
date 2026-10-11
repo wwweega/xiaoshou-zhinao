@@ -1,0 +1,40 @@
+# ============================================================
+# 运营智脑 · 本地一键启动（单容器）
+# 用法： docker compose up -d --build
+#       docker compose logs -f app
+#
+# 说明（勿踩坑）：
+#   本项目的默认存储是 SQLite，任务产物落盘到 ./data，
+#   语义缓存是进程内 LRU，**不依赖 Redis / PostgreSQL**。
+#   因此这里只起一个 app 服务，够用、好复现。
+#
+#   如果你的场景需要「重启不丢 checkpoint」或多副本横向扩展：
+#     1) pip install "langgraph-checkpoint-postgres>=2.0.9"
+#     2) 把 .env 里的 DATABASE_URL 改成 postgresql://...
+#        （app/memory/persistence.py 会自动切到 PostgresSaver，失败则降级内存）
+#     3) 自行在 compose 里补一个 postgres 服务即可。
+# ============================================================
+services:
+  app:
+    build: .
+    container_name: zhinao-app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # 产物、trace、任务 JSON 都落在 data/，挂出来持久化
+      - ./data:/app/data
+      - ./docs:/app/docs
+    restart: unless-stopped
+    # 面试考点：为什么要设资源限制？
+    #   一个内存泄漏的 Agent 进程能把整台机器拖垮（noisy neighbor）。
+    #   K8s/Docker 里必须设 limits，这是生产铁律。
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M

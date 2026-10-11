@@ -1,0 +1,29 @@
+# ---------- 运行时 ----------
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.0
+python-dotenv==1.0.1
+
+# ---------- LLM ----------
+openai==1.59.6
+langgraph==0.2.60
+langchain-core==0.3.29
+
+# ---------- 工程 ----------
+httpx==0.28.1
+tenacity==9.0.0
+
+# ---------- 生产可选（本地可不装）----------
+# 说明：本项目默认单机 SQLite + 进程内缓存，下列依赖都未启用。
+# psycopg2-binary==2.9.10     # PostgreSQL checkpointer / 业务库
+# langgraph-checkpoint-postgres==2.0.9
+# redis==5.2.1                # 语义缓存/限流（如需多副本共享缓存再启用）
+# celery==5.4.0               # 异步任务队列
+# prometheus-client==0.21.1   # 指标暴露
+# ragas==0.2.6                # RAG 评测（进阶）
+# langfuse==2.57.0            # 可观测平台
+
+# ---------- 开发/测试 ----------
+pytest==8.3.4
+pytest-asyncio==0.25.0

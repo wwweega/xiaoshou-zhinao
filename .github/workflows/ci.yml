@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: 安装依赖
+        run: |
+          pip install -r requirements.txt
+
+      - name: 单元测试
+        env:
+          LLM_PROVIDER: mock   # 关键：CI 里绝不真的调用付费 API
+        run: |
+          python -m pytest tests/ -v --tb=short
+
+      # 面试考点：为什么要把评测放进 CI？
+      #   AI 应用最大的风险是「静默退化」——改一句 prompt，
+      #   90% 的 case 还正常，但某一类场景悄悄崩了，上线后才发现。
+      #   回归门禁是唯一能拦住这个问题的机制。
+      - name: 离线评测（mock 模式，含发布门禁）
+        env:
+          LLM_PROVIDER: mock
+          ENABLE_TRACE: "true"
+        run: |
+          python -m scripts.run_eval --limit 6 --no-judge --out docs/eval_ci.md
+
+      - name: 上传评测报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: docs/eval_ci.md
+          if-no-files-found: ignore
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: 构建镜像（验证 Dockerfile 可用）
+        run: docker build -t zhinao:ci .

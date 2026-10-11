@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>运营智脑 · Multi-Agent 运营自动化平台</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1e222d; --line:#2a2f3d;
+    --ink:#e6e9f0; --sub:#8b93a7; --brand:#7048e8; --brand2:#4c6ef5;
+    --ok:#37b24d; --warn:#f59f00; --err:#f03e3e; --cyan:#15aabf;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.65 -apple-system,
+    BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1440px;margin:0 auto;padding:20px 22px 40px}
+  header{display:flex;align-items:center;justify-content:space-between;
+    padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:20px;flex-wrap:wrap;gap:12px}
+  h1{margin:0;font-size:19px;letter-spacing:.3px}
+  h1 span{color:var(--brand2)}
+  .badges{display:flex;gap:8px;flex-wrap:wrap}
+  .badge{background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+    padding:4px 12px;font-size:12px;color:var(--sub)}
+  .badge b{color:var(--ink);font-weight:600}
+  .badge.ok{border-color:#2b5c33;color:#8ce99a}
+  .badge.warn{border-color:#6b4b13;color:#ffd43b}
+
+  .grid{display:grid;grid-template-columns:1fr 380px;gap:18px}
+  @media(max-width:1100px){.grid{grid-template-columns:1fr}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .card h2{margin:0 0 12px;font-size:14px;color:var(--sub);font-weight:600;
+    text-transform:uppercase;letter-spacing:.8px}
+  textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+    border-radius:9px;padding:12px;font:inherit;resize:vertical;min-height:84px;outline:none}
+  textarea:focus{border-color:var(--brand2)}
+  .btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  button{background:var(--brand2);color:#fff;border:none;border-radius:8px;
+    padding:9px 18px;font:inherit;font-weight:600;cursor:pointer;transition:.15s}
+  button:hover{filter:brightness(1.15)}
+  button:disabled{opacity:.45;cursor:not-allowed;filter:none}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--sub)}
+
+  .presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .preset{background:var(--panel2);border:1px solid var(--line);color:var(--sub);
+    border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer}
+  .preset:hover{color:var(--ink);border-color:var(--brand2)}
+
+  /* Agent 流水线可视化 */
+  .flow{display:flex;gap:6px;margin:14px 0;flex-wrap:wrap;align-items:center}
+  .node{flex:1;min-width:88px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:8px;padding:8px 6px;text-align:center;font-size:11.5px;color:var(--sub);
+    transition:.2s;position:relative}
+  .node.active{border-color:var(--brand2);color:#fff;background:#243049;
+    box-shadow:0 0 0 3px rgba(76,110,245,.15)}
+  .node.done{border-color:#2b5c33;color:#8ce99a}
+  .node.err{border-color:#6e2b2b;color:#ffa8a8}
+  .arw{color:#3d4455;font-size:12px}
+
+  /* 日志流 */
+  #log{background:#0b0d13;border:1px solid var(--line);border-radius:10px;
+    padding:12px;height:400px;overflow-y:auto;font:12.5px/1.8 ui-monospace,Menlo,Consolas,monospace}
+  .ln{white-space:pre-wrap;word-break:break-word;color:#a8b0c4}
+  .ln-ok{color:#8ce99a} .ln-warn{color:#ffd43b} .ln-err{color:#ffa8a8}
+  .ln-tool{color:#74c0fc} .ln-agent{color:#d0bfff} .ln-dim{color:#5a6274}
+
+  /* 指标 */
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .kpi{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+  .kpi .v{font-size:20px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+  .kpi .l{font-size:11px;color:var(--sub);margin-top:2px}
+  .bar{height:6px;background:#0b0d13;border-radius:4px;overflow:hidden;margin-top:7px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--brand2),var(--brand))}
+
+  /* 计划 */
+  .plan{margin-top:10px}
+  .task{display:flex;gap:9px;align-items:flex-start;padding:8px 10px;border-radius:8px;
+    background:var(--panel2);border:1px solid var(--line);margin-bottom:6px;font-size:12.5px}
+  .dot{width:8px;height:8px;border-radius:50%;background:#3d4455;margin-top:6px;flex-shrink:0}
+  .dot.done{background:var(--ok)} .dot.run{background:var(--warn)}
+  .dot.fail{background:var(--err)}
+  .task .meta{color:var(--sub);font-size:11.5px;margin-top:2px}
+
+  /* 维度得分 */
+  .dim{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12.5px}
+  .dim .n{width:64px;color:var(--sub)} .dim .b{flex:1;height:7px;background:#0b0d13;border-radius:4px;overflow:hidden}
+  .dim .b i{display:block;height:100%;background:var(--ok)}
+  .dim .s{width:34px;text-align:right;font-variant-numeric:tabular-nums}
+
+  pre.out{background:#0b0d13;border:1px solid var(--line);border-radius:10px;
+    padding:14px;max-height:520px;overflow:auto;white-space:pre-wrap;font-size:12.5px;line-height:1.75}
+  .tabs{display:flex;gap:4px;margin-bottom:10px;border-bottom:1px solid var(--line)}
+  .tab{padding:7px 14px;font-size:13px;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent}
+  .tab.on{color:#fff;border-bottom-color:var(--brand2)}
+  .hidden{display:none}
+  .empty{color:#4d5564;text-align:center;padding:34px 0;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>运营智脑 · <span>Multi-Agent 运营自动化平台</span></h1>
+      <div class="badges" style="margin-top:8px">
+        <span class="badge">LangGraph 状态图编排</span>
+        <span class="badge">6 Agent 协作</span>
+        <span class="badge">12 MCP 工具</span>
+        <span class="badge" id="b-provider">provider: -</span>
+        <span class="badge" id="b-mock">mock: -</span>
+      </div>
+    </div>
+    <button class="ghost" onclick="refreshMetrics()">刷新指标</button>
+  </header>
+
+  <div class="grid">
+    <!-- 左列 -->
+    <div>
+      <div class="card">
+        <h2>① 输入运营需求</h2>
+        <textarea id="query" placeholder="例如：帮我调研厨房收纳品类在亚马逊美国站的市场情况，分析 Top5 竞品的定价策略，并基于评论洞察写一份可直接使用的 Listing 和广告关键词方案"></textarea>
+        <div class="presets">
+          <span class="preset" onclick="setQ(this)">市场调研 + Listing 全流程</span>
+          <span class="preset" onclick="setQ(this)">竞品定价策略分析</span>
+          <span class="preset" onclick="setQ(this)">评论痛点洞察</span>
+          <span class="preset" onclick="setQ(this)">生成本周运营周报</span>
+          <span class="preset" onclick="setQ(this)">广告关键词分组方案</span>
+        </div>
+        <div class="btns">
+          <button id="btn-run" onclick="runTask()">▶ 执行任务（流式）</button>
+          <button class="ghost" onclick="runSync()">同步执行</button>
+          <button class="ghost" onclick="clearAll()">清空</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h2>② Agent 协作流水线</h2>
+        <div class="flow">
+          <div class="node" id="n-prepare">prepare<br><small>记忆召回</small></div><span class="arw">→</span>
+          <div class="node" id="n-planner">planner<br><small>任务拆解</small></div><span class="arw">→</span>
+          <div class="node" id="n-execute">execute<br><small>并行执行</small></div><span class="arw">→</span>
+          <div class="node" id="n-writer">writer<br><small>内容生成</small></div><span class="arw">→</span>
+          <div class="node" id="n-critic">critic<br><small>质量审核</small></div><span class="arw">↺</span>
+          <div class="node" id="n-finalize">finalize<br><small>定稿沉淀</small></div>
+        </div>
+        <div id="plan" class="plan"><div class="empty">等待任务执行…</div></div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h2>③ 执行日志（实时）</h2>
+        <div id="log"><div class="ln ln-dim">等待任务开始…</div></div>
+      </div>
+    </div>
+
+    <!-- 右列 -->
+    <div>
+      <div class="card">
+        <h2>运行指标</h2>
+        <div class="kpis">
+          <div class="kpi"><div class="v" id="m-tasks">0</div><div class="l">任务总数</div></div>
+          <div class="kpi"><div class="v" id="m-success">-</div><div class="l">成功率</div>
+            <div class="bar"><i id="m-success-bar" style="width:0%"></i></div></div>
+          <div class="kpi"><div class="v" id="m-p95">0</div><div class="l">P95 延迟 (ms)</div></div>
+          <div class="kpi"><div class="v" id="m-cost">$0</div><div class="l">累计成本</div></div>
+          <div class="kpi"><div class="v" id="m-tokens">0</div><div class="l">总 token</div></div>
+          <div class="kpi"><div class="v" id="m-tools">0</div><div class="l">工具调用</div></div>
+          <div class="kpi"><div class="v" id="m-cache">-</div><div class="l">缓存命中率</div></div>
+          <div class="kpi"><div class="v" id="m-route">-</div><div class="l">小模型路由占比</div></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h2>质量评分</h2>
+        <div id="score-box"><div class="empty">任务完成后展示</div></div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h2>交付物</h2>
+        <div class="tabs">
+          <div class="tab on" onclick="switchTab('out',this)">报告</div>
+          <div class="tab" onclick="switchTab('trace',this)">Trace</div>
+        </div>
+        <pre class="out" id="out"><span class="empty" style="display:block">等待任务完成…</span></pre>
+        <pre class="out hidden" id="trace"></pre>
+        <div class="btns">
+          <button class="ghost" onclick="download()">⬇ 下载报告</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let es = null, reportText = "";
+
+const PRESETS = {
+  "市场调研 + Listing 全流程": "帮我调研厨房收纳品类在亚马逊美国站的市场情况，分析 Top5 竞品的定价策略，并基于评论洞察写一份可直接使用的 Listing 和广告关键词方案",
+  "竞品定价策略分析": "分析厨房收纳品类 Top5 竞品的定价策略，指出我们的价格空间和主推价格带",
+  "评论痛点洞察": "分析竞品评论里的用户痛点，指出我们的产品应该主打哪三个卖点",
+  "生成本周运营周报": "生成本周店铺运营周报，包含营收、订单、转化率、广告表现，并给出下周优化建议",
+  "广告关键词分组方案": "基于竞品分析给出广告关键词分组方案，区分核心词、长尾词与否定词"
+};
+function setQ(el){ $('query').value = PRESETS[el.textContent.trim()] || el.textContent; }
+
+function log(msg, cls="") {
+  const box = $('log');
+  if (box.children.length === 1 && box.children[0].textContent.includes('等待')) box.innerHTML = "";
+  const d = document.createElement('div');
+  d.className = 'ln ' + cls;
+  d.textContent = msg;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+function classify(m){
+  if (m.includes('❌') || m.includes('失败') || m.includes('🚫')) return 'ln-err';
+  if (m.includes('⚠️')) return 'ln-warn';
+  if (m.includes('✅') || m.includes('完成') || m.includes('✔')) return 'ln-ok';
+  if (m.includes('工具') || m.includes('→ 调用')) return 'ln-tool';
+  if (m.includes('🤖') || m.includes('Agent') || m.includes('Planner')) return 'ln-agent';
+  return '';
+}
+function resetNodes(){
+  ['prepare','planner','execute','writer','critic','finalize'].forEach(n=>{
+    const e = $('n-'+n); e.className = 'node';
+  });
+}
+function markNode(n, cls){ const e = $('n-'+n); if(e) e.className = 'node ' + cls; }
+
+/* ---------- 流式执行 ---------- */
+function runTask() {
+  const q = $('query').value.trim();
+  if (!q) { alert('请输入需求'); return; }
+  if (es) es.close();
+
+  $('log').innerHTML = ""; resetNodes(); $('plan').innerHTML = '<div class="empty">规划中…</div>';
+  $('btn-run').disabled = true;
+  log('▶ 提交任务…', 'ln-agent');
+
+  es = null;
+
+  // 用 fetch + ReadableStream 解析 SSE（比 EventSource 更灵活，支持 POST）
+  fetch('/api/run', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({query: q, stream: true, wait: true})
+  }).then(resp => {
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    function pump(){
+      return reader.read().then(({done, value}) => {
+        if (done) { $('btn-run').disabled = false; return; }
+        buf += dec.decode(value, {stream:true});
+        const parts = buf.split("\n\n");
+        buf = parts.pop();
+        parts.forEach(p => {
+          if (p.startsWith(":")) return;
+          const line = p.split("\n").find(l => l.startsWith("data: "));
+          if (!line) return;
+          try { handleEvent(JSON.parse(line.slice(6))); } catch(e){}
+        });
+        return pump();
+      });
+    }
+    return pump();
+  }).catch(err => {
+    log('❌ 连接失败：' + err, 'ln-err');
+    $('btn-run').disabled = false;
+  });
+}
+
+function handleEvent(ev){
+  if (ev.type === 'start') { log('🚀 任务已创建：' + ev.task_id, 'ln-agent'); markNode('prepare','active'); }
+  else if (ev.type === 'log') { 
+    log(ev.message, classify(ev.message));
+    // 根据日志内容推断当前处于哪个节点
+    if (ev.message.includes('Planner')) markNode('planner','active');
+    if (ev.message.includes('并行执行')) markNode('execute','active');
+    if (ev.message.includes('Writer')) markNode('writer','active');
+    if (ev.message.includes('Critic')) markNode('critic','active');
+    if (ev.message.includes('Reviewer') || ev.message.includes('交付')) markNode('finalize','active');
+  }
+  else if (ev.type === 'plan') renderPlan(ev.plan);
+  else if (ev.type === 'error') { log('❌ ' + ev.message, 'ln-err'); }
+  else if (ev.type === 'done') { log('🏁 任务结束', 'ln-ok'); refreshMetrics(); }
+  else if (ev.type === 'result') { renderResult(ev); }
+}
+
+function renderPlan(plan){
+  if (!plan || !plan.subtasks) return;
+  const html = plan.subtasks.map(t => `
+    <div class="task">
+      <span class="dot"></span>
+      <div style="flex:1">
+        <b>${t.name}</b>
+        <div class="meta">[${t.id}] ${t.agent} · 依赖 ${(t.depends_on||[]).join(',')||'无'}</div>
+      </div>
+    </div>`).join('');
+  $('plan').innerHTML = `<div class="meta" style="color:var(--sub);margin-bottom:8px">
+    目标：${plan.goal||'-'} ｜ 复杂度：${plan.complexity} ｜ 共 ${plan.subtasks.length} 个子任务</div>` + html;
+}
+
+function renderResult(ev){
+  ['prepare','planner','execute','writer','critic','finalize'].forEach(n=>markNode(n,'done'));
+  reportText = ev.deliverable || "";
+  $('out').textContent = reportText || '（无交付物）';
+  $('trace').textContent = ev.trace || '';
+
+  const s = ev.score;
+  const dims = [['relevance','相关性'],['factuality','事实性'],['compliance','合规性'],['readability','可读性']];
+  $('score-box').innerHTML = `
+    <div style="text-align:center;margin-bottom:12px">
+      <div style="font-size:30px;font-weight:700;color:${s>=0.8?'var(--ok)':s>=0.6?'var(--warn)':'var(--err)'}">
+        ${s!=null ? s.toFixed(2) : '-'}</div>
+      <div style="font-size:11.5px;color:var(--sub)">综合质量分</div>
+    </div>
+    <div class="meta" style="color:var(--sub);font-size:12.5px;line-height:2">
+      <div>反思轮次：<b>${ev.reflection_rounds}</b></div>
+      <div>总 token：<b>${ev.tokens}</b></div>
+      <div>总成本：<b>$${(ev.cost_usd||0).toFixed(5)}</b></div>
+      <div>端到端耗时：<b>${(ev.latency_ms||0).toFixed(0)} ms</b></div>
+    </div>`;
+}
+
+/* ---------- 同步执行 ---------- */
+function runSync(){
+  const q = $('query').value.trim();
+  if (!q) { alert('请输入需求'); return; }
+  $('btn-run').disabled = true;
+  log('▶ 同步执行（可能耗时较久）…', 'ln-agent');
+  fetch('/api/run', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({query:q, stream:false, wait:true})})
+    .then(r => r.json())
+    .then(d => {
+      const s = d.summary;
+      reportText = s.deliverable ? s.deliverable.content : "";
+      $('out').textContent = reportText || '（无）';
+      $('trace').textContent = d.trace || '';
+      log('🏁 完成，质量分 ' + (s.critique ? s.critique.score : '-'), 'ln-ok');
+      if (s.critique) renderResult({score:s.critique.score, tokens:s.total_tokens,
+        cost_usd:s.total_cost_usd, latency_ms:s.latency_ms, reflection_rounds:s.reflection_rounds,
+        deliverable: reportText, trace: d.trace});
+      if (s.plan) renderPlan(s.plan);
+      $('btn-run').disabled = false;
+      refreshMetrics();
+    })
+    .catch(e => { log('❌ ' + e, 'ln-err'); $('btn-run').disabled = false; });
+}
+
+/* ---------- 指标 ---------- */
+function refreshMetrics(){
+  fetch('/api/metrics').then(r=>r.json()).then(m=>{
+    $('m-tasks').textContent = m.total_tasks;
+    $('m-success').textContent = (m.success_rate*100).toFixed(0)+'%';
+    $('m-success-bar').style.width = (m.success_rate*100)+'%';
+    $('m-p95').textContent = m.latency_ms.p95;
+    $('m-cost').textContent = '$' + m.total_cost_usd.toFixed(4);
+    $('m-tokens').textContent = m.total_tokens;
+    $('m-tools').textContent = m.tool_calls;
+    $('m-cache').textContent = (m.cache.hit_rate*100).toFixed(0)+'%';
+    $('m-route').textContent = (m.llm.routing_saving_ratio*100).toFixed(0)+'%';
+    $('b-provider').textContent = 'provider: ' + m.config.provider;
+    $('b-mock').textContent = 'mock: ' + m.config.mock_mode;
+    $('b-mock').className = 'badge ' + (m.config.mock_mode ? 'warn' : 'ok');
+  }).catch(()=>{});
+}
+function switchTab(id, el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  $('out').classList.toggle('hidden', id!=='out');
+  $('trace').classList.toggle('hidden', id!=='trace');
+}
+function download(){
+  const blob = new Blob([reportText || ''], {type:'text/markdown;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'zhinao_report_' + Date.now() + '.md';
+  a.click();
+}
+function clearAll(){
+  if (es) { es.close(); es = null; }
+  $('log').innerHTML = '<div class="ln ln-dim">等待任务开始…</div>';
+  $('out').innerHTML = '<span class="empty" style="display:block">等待任务完成…</span>';
+  $('trace').textContent = '';
+  $('plan').innerHTML = '<div class="empty">等待任务执行…</div>';
+  $('score-box').innerHTML = '<div class="empty">任务完成后展示</div>';
+  resetNodes(); reportText = "";
+  $('btn-run').disabled = false;
+}
+refreshMetrics();
+setInterval(refreshMetrics, 8000);
+</script>
+</body>
+</html>
