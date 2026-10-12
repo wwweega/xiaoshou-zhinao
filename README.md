@@ -1,9 +1,10 @@
 # 运营智脑 · 跨境电商 Multi-Agent 运营自动化平台
 
+> 开发周期：2026.02 – 2026.08
 > 用 LangGraph 把 6 个角色 Agent 编成一张状态图，自动完成跨境电商运营全流程：
 > 市场调研 → 竞品分析 → 评论洞察 → Listing 生成 → 广告关键词 → 运营周报。
 
-**核心不是"能跑通"，而是"可控 + 可度量"** —— 这是企业级 AI 应用和 Demo 的分界线。
+> 项目重点放在可控和可度量上：每一步有状态约束，每次运行有评测结果。
 
 ---
 
@@ -88,7 +89,7 @@ python -m scripts.run_eval                        # 完整版，含 judge 抽样
 
 ### 六层模块
 
-| 层 | 目录 | 职责 | 面试考点 |
+| 层 | 目录 | 职责 | 设计要点 |
 |---|---|---|---|
 | 配置层 | `app/core/config.py` | 环境变量、类型校验、密钥隔离 | 12-Factor App |
 | 契约层 | `app/core/schemas.py` | Pydantic 数据模型、DAG 拓扑排序 | 结构化输出 |
@@ -98,7 +99,7 @@ python -m scripts.run_eval                        # 完整版，含 judge 抽样
 | 工具层 | `app/tools/registry.py` | 12 个 MCP 风格工具、校验 / 重试 / 幂等 / 权限 | Function Calling |
 | 智能体层 | `app/agents/roles.py` | 6 个角色的 prompt 与执行逻辑 | Multi-Agent 协作 |
 | 编排层 | `app/graph/workflow.py` | LangGraph 状态图、条件边、循环反思 | 状态机编排 |
-| 评测层 | `app/eval/harness.py` | 三层评测体系 + CI 门禁 | **最值钱的能力** |
+| 评测层 | `app/eval/harness.py` | 三层评测体系 + CI 门禁 | 结果可量化 |
 | 接口层 | `app/api/routes.py` | FastAPI + SSE 流式 | 工程交付 |
 
 ---
@@ -197,7 +198,6 @@ xiaoshou-zhinao/
 │   ├── traces/                  # Trace 归档（指标：token/耗时/成本/span 树）
 │   ├── tasks/                   # 任务业务视图（含 archived_path）
 │   └── deliverables/            # ★ 交付物正文归档（Markdown，可追溯）
-├── docs/面试题手册.md            # 40 个面试题 + 回答框架
 ├── Dockerfile / docker-compose.yml
 └── .github/workflows/ci.yml     # CI（测试 + 评测门禁 + 镜像构建）
 ```
@@ -280,7 +280,7 @@ xiaoshou-zhinao/
 > 顶部标注为准；该报告在 mock 运行时会在开头明确标注"非真实测量"。
 > 简历请引用真实模型口径的数字。
 
-### 关键性能洞察（面试可讲）
+### 关键性能洞察（关键洞察）
 
 以 Run 2 的 trace 为准（21 个 span，全部 ok）：
 
@@ -308,7 +308,7 @@ finalize      0.0s  ( 0.0%)
 
 ---
 
-## 八、边界与失败模式（面试必讲的"诚实清单"）
+## 八、边界与失败模式（如实交代的"诚实清单"）
 
 > 一个 Agent 项目值不值得信，不看它顺利时多漂亮，看它**失败时能不能说清怎么失败的**。
 > 下面每一条都对应代码里的具体处理，而不是空话。
@@ -338,7 +338,7 @@ finalize      0.0s  ( 0.0%)
 | **额度/网络超时** | 长文生成耗时远超预期 | `timeout=180s`；区分确定性/瞬时错误，仅后者退避重试 |
 | **`sql_query` 无真实数据** | 模拟环境返回执行计划 | 模型**诚实标注 `$[待回填]` 而非编造数字**——这是事实性约束在生效 |
 
-### 8.3 一句话面试话术
+### 8.3 一句话一句话回答
 
 > "这个项目的价值不在它有多完美，而在于**每一处失败我都能定位到根因并写进文档**。
 > 比如我发现过三个真 bug：墙钟耗时算错、安全拦截 fail-open、长任务产物丢内存——
@@ -348,13 +348,12 @@ finalize      0.0s  ( 0.0%)
 
 ## 九、文档
 
-- [`docs/逐步实现指南_实战增强版.md`](docs/逐步实现指南_实战增强版.md) —— **从零实现的完整顺序 + 每步面试考点**
+- [`docs/逐步实现指南_实战增强版.md`](docs/逐步实现指南_实战增强版.md) —— **从零实现的完整顺序 + 每步设计要点**
 - [`docs/实测数据档案_三次真实运行.md`](docs/实测数据档案_三次真实运行.md) —— **★ 三次真实运行完整数据（可下载引用）**
 - [`docs/measured_metrics.md`](docs/measured_metrics.md) —— **★ 从 trace 自动复算的指标（可重跑验证）**
 - [`docs/真实模型实测报告.md`](docs/真实模型实测报告.md) —— **真实模型实测数据 + 3 个坑的定位与修复**
 - [`docs/踩坑记录.md`](docs/踩坑记录.md) —— 6 个真实工程坑的深入复盘（含"长任务产物丢失"）
 - [`docs/百炼模型选型指南.md`](docs/百炼模型选型指南.md) —— 阿里云百炼模型选型与接入
-- [`docs/面试题手册.md`](docs/面试题手册.md) —— 面试题 + 回答框架 + 3 分钟演示脚本
 - [`docs/eval_report.md`](docs/eval_report.md) —— 评测报告（跑完 `run_eval` 生成，含 mock 标注）
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) —— 贡献指南（含"禁止编造数据"红线）
 

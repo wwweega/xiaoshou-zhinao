@@ -1,7 +1,7 @@
 """
 Step 4 补充 · 持久化层（Checkpointer）
 ============================================================
-面试考点：Agent 的"断点续跑"是怎么实现的？
+设计要点：Agent 的"断点续跑"是怎么实现的？
   → 核心是 Checkpointer：把图的完整状态在每个 super-step 后存下来。
     LangGraph 内置了这个抽象，换存储只改一行（MemorySaver ↔ PostgresSaver）。
 
@@ -31,7 +31,7 @@ def build_checkpointer() -> Any:
     """
     返回一个 LangGraph 兼容的 checkpointer。
 
-    面试考点：为什么用 try-import 而不是硬依赖？
+    设计要点：为什么用 try-import 而不是硬依赖？
       → 本地开发和 CI 不该被迫装 PostgreSQL。可选依赖降级是工程常识，
         PostgresSaver 属于可选依赖，装不上就退到内存实现。
     """
@@ -65,7 +65,7 @@ def build_checkpointer() -> Any:
 # ============================================================
 class TaskStore:
     """
-    面试考点：为什么任务状态要和 Graph 的 checkpoint 分开存？
+    设计要点：为什么任务状态要和 Graph 的 checkpoint 分开存？
       → 职责不同。checkpoint 是「执行引擎的内部状态」（为了能恢复），
         TaskStore 是「面向业务的查询视图」（前端要展示任务列表、状态、产物）。
         混在一起会导致：①内部结构变更频繁，污染 API 契约

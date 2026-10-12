@@ -1,7 +1,7 @@
 """
 Step 3 · 工具层（MCP 风格）
 ============================================================
-面试考点：为什么 Agent 需要「工具」而不是让模型硬答？
+设计要点：为什么 Agent 需要「工具」而不是让模型硬答？
   - 模型的知识是静态的、会幻觉的。凡是「可计算、可查询、需实时」的事，
     都必须走工具（Tool Calling / Function Calling），模型只负责决策用哪个工具、传什么参数。
   - Anthropic 提出的 MCP（Model Context Protocol）就是把这套东西标准化：
@@ -131,7 +131,7 @@ class ToolRegistry:
         if spec.name in self._tools:
             raise ValueError(f"工具重名: {spec.name}")
         self._tools[spec.name] = spec
-        # 面试考点：为什么要 per-key 锁而不是全局锁？
+        # 设计要点：为什么要 per-key 锁而不是全局锁？
         #   → 同一个幂等键并发时只需一次真实调用（防缓存击穿），
         #     不同 key 之间不应互相阻塞，否则并发退化成串行。
         self._locks[spec.name] = asyncio.Lock()
@@ -159,7 +159,7 @@ class ToolRegistry:
         tracer: TraceRecorder | None = None,
     ) -> ToolCall:
         """
-        面试考点：为什么所有工具必须走同一个 call 入口？
+        设计要点：为什么所有工具必须走同一个 call 入口？
           → 只有收口才能统一做：trace、超时、重试、缓存、参数校验、指标统计。
             如果每个 Agent 自己直接调 handler，这些能力要写 12 遍而且必然漏。
         """
@@ -191,7 +191,7 @@ class ToolRegistry:
             metrics.cache_misses += 1
 
         # ---------- 参数校验（在调用前做，而不是靠抛异常）----------
-        # 面试考点：为什么校验要前置？
+        # 设计要点：为什么校验要前置？
         #   ①靠 TypeError 兜底太脆弱：Python 里参数名写错、类型不对抛的异常类型不固定
         #   ②前置校验能给出精确的错误信息（缺哪个字段、类型错在哪）
         #   ③这类错误不该重试，越早失败越省资源
@@ -221,7 +221,7 @@ class ToolRegistry:
             return record
 
         # ---------- 带重试的调用 ----------
-        # 面试考点：异常分类决定「能不能重试」，这个分类是稳定性的关键
+        # 设计要点：异常分类决定「能不能重试」，这个分类是稳定性的关键
         #   - 超时 / 限流  → 可重试（瞬时故障，重试大概率成功）
         #   - 安全拦截     → 绝不重试（策略拒绝，重试永远失败，白等 1.3 秒）
         #   - 参数错误     → 绝不重试（要模型改参数，不是重发）
@@ -301,14 +301,14 @@ class ToolRegistry:
 # 生产替换：把 _simulate_* 换成真实 API 调用即可，Agent 侧代码一行不用改。
 # ============================================================
 def _seeded(seed_str: str) -> random.Random:
-    """用字符串做种子，保证同一输入永远得到同一输出——面试演示可复现。"""
+    """用字符串做种子，保证同一输入永远得到同一输出——保证演示可复现。"""
     return random.Random(int(hashlib.md5(seed_str.encode()).hexdigest()[:8], 16))
 
 
 async def competitor_scraper(category: str = "kitchen storage", top_n: int = 5) -> dict[str, Any]:
     """
     模拟竞品抓取。
-    面试考点：真实项目这里要处理反爬、代理池、增量抓取、robots 合规。
+    设计要点：真实项目这里要处理反爬、代理池、增量抓取、robots 合规。
     代码里必须体现你对风控的认知——直接写"爬虫随便爬"是减分项。
     """
     await asyncio.sleep(0.15)  # 模拟网络 IO，方便观察并发优化效果
@@ -383,7 +383,7 @@ async def review_insight(product_id: str, max_reviews: int = 100) -> dict[str, A
 async def sql_query(sql: str, limit: int = 100) -> dict[str, Any]:
     """
     模拟 SQL 查询。
-    面试考点：真实 Agent 执行 SQL 必须有「只读 + 表白名单 + 行数上限 + 超时」四道闸。
+    设计要点：真实 Agent 执行 SQL 必须有「只读 + 表白名单 + 行数上限 + 超时」四道闸。
     模型生成的 SQL 直接打到生产库 = 灾难（DROP TABLE）。
     """
     await asyncio.sleep(0.05)
@@ -497,7 +497,7 @@ async def price_history(product_id: str, days: int = 30) -> dict[str, Any]:
 async def image_generator(prompt: str, scene: str = "产品场景图") -> dict[str, Any]:
     """
     模拟图片生成。真实场景接 ComfyUI / SD API（飞博共创、上霖卫浴 JD 都提到）。
-    面试考点：生产要按场景维护 Prompt 模板库，而不是让用户手写 prompt。
+    设计要点：生产要按场景维护 Prompt 模板库，而不是让用户手写 prompt。
     """
     await asyncio.sleep(0.2)
     return {

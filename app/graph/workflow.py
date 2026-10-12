@@ -1,7 +1,7 @@
 """
 Step 6 · LangGraph 状态图编排（项目心脏）
 ============================================================
-面试考点（这是简历上「LangGraph 状态图 / 条件边 / 循环反思 / 断点续跑」的代码落点，
+设计要点（这是简历上「LangGraph 状态图 / 条件边 / 循环反思 / 断点续跑」的代码落点，
 也是最容易被深挖的地方，务必吃透）：
 
 Q1: 为什么用 LangGraph，不用自己写 while 循环？
@@ -70,7 +70,7 @@ def _merge_results(a: dict[str, str], b: dict[str, str]) -> dict[str, str]:
     """
     自定义 reducer。
 
-    面试考点：为什么需要 reducer？
+    设计要点：为什么需要 reducer？
       → LangGraph 在并行 super-step 里，多个节点可能同时更新同一个字段。
         默认行为是"后写覆盖"，会丢数据。给字段加 Annotated[dict, reducer]
         就告诉框架"合并而不是覆盖"。
@@ -114,7 +114,7 @@ def next_ready_subtasks(plan: Plan) -> list[SubTask]:
     """
     找出当前可以执行的所有子任务（依赖已全部完成）。
 
-    面试考点：为什么要"批次"而不是"逐个"？
+    设计要点：为什么要"批次"而不是"逐个"？
       → 逐个执行会浪费并行机会。比如 t1、t2 互不依赖，
         串行 2×3s=6s，并发 3s。批次化是 Task 级并行的实现基础。
 
@@ -142,7 +142,7 @@ def next_ready_subtasks(plan: Plan) -> list[SubTask]:
 async def prepare_node(state: GraphState, tracer: TraceRecorder | None = None) -> dict[str, Any]:
     tracer = tracer or get_tracer()
     """
-    面试考点：为什么准备阶段要单独成节点，而不塞进 planner？
+    设计要点：为什么准备阶段要单独成节点，而不塞进 planner？
       → 单一职责 + 可观测。这样 trace 里能清楚看到"记忆召回花了多少时间、
         召回了什么"，排查"为什么 Agent 引用了一个不相关的历史结论"时非常有用。
     """
@@ -201,7 +201,7 @@ async def planner_node(state: GraphState, tracer: TraceRecorder | None = None) -
 # ============================================================
 async def execute_batch_node(state: GraphState, tracer: TraceRecorder | None = None) -> dict[str, Any]:
     """
-    面试考点（高频）：这里的并发是怎么做的？要注意什么？
+    设计要点（高频）：这里的并发是怎么做的？要注意什么？
       ①用 asyncio.gather 并发执行同批次子任务
       ②用 return_exceptions=True，单个子任务失败不能拖垮整批
       ③并发度要有上限：外部 API 有限流，无限并发会把自己打死
@@ -363,7 +363,7 @@ async def critic_node(state: GraphState, tracer: TraceRecorder | None = None) ->
 async def revise_node(state: GraphState, tracer: TraceRecorder | None = None) -> dict[str, Any]:
     tracer = tracer or get_tracer()
     """
-    面试考点（必问）：循环反思怎么防止死循环 + 怎么防止越改越差？
+    设计要点（必问）：循环反思怎么防止死循环 + 怎么防止越改越差？
       三道保险：
         ①硬上限 max_reflection_rounds（配置化），到了就放行不再改
         ②保留历史最佳版本：如果改完分数更低，就回滚到上一版
@@ -456,7 +456,7 @@ async def finalize_node(state: GraphState, tracer: TraceRecorder | None = None) 
         logger.warning("长期记忆写入失败: %s", exc)
 
     # ---------- 交付物归档（踩坑修复）----------
-    # 面试考点：为什么长任务的产物必须立刻落盘，而不能只留在内存/trace 里？
+    # 设计要点：为什么长任务的产物必须立刻落盘，而不能只留在内存/trace 里？
     #   实测教训：一次 11.6 分钟、5.8 万 token 跑出的 1.3 万字报告，
     #   因为只存在内存 state 里，服务一停就永久丢失——钱白花了。
     #   trace 记录的是「指标」（token/耗时），不是「产物」；两者要分开归档。
@@ -497,7 +497,7 @@ def route_after_execute(state: GraphState) -> Literal["execute", "writer"]:
     """
     执行循环条件边：还有可执行子任务就继续循环，否则去写作。
 
-    面试考点：这个条件边实现了什么？
+    设计要点：这个条件边实现了什么？
       → 实现了「任务级 DAG 的动态调度」。LangGraph 的循环边 + 状态里的
         current_batch 共同构成一个"批次推进器"，
         每轮 super-step 消化一批（并行的），直到 DAG 全部完成。
@@ -511,7 +511,7 @@ def route_after_critic(state: GraphState) -> Literal["revise", "finalize"]:
     """
     反思循环条件边：不通过且还有轮次预算 → 回灌重跑；否则定稿。
 
-    面试考点：为什么要判 rounds 上限？
+    设计要点：为什么要判 rounds 上限？
       → 没有上限的反思循环会烧钱到天荒地老。企业级系统里，
         一切循环都必须有预算上限（token 预算、轮次预算、时间预算），
         这是"成本可控"的根本。
@@ -531,7 +531,7 @@ def build_graph(checkpointer: Any = None):
     """
     组装状态图。
 
-    面试考点：为什么要提供 build_graph 函数而不是模块级单例图？
+    设计要点：为什么要提供 build_graph 函数而不是模块级单例图？
       → 测试时可以传入不同的 checkpointer（单测用内存，集成测试用 PG），
         也让"图结构"成为可参数化的对象，便于多租户下定制不同流程。
     """
@@ -573,7 +573,7 @@ def _wrap(name: str, fn):
     """
     包装节点：用 contextvars 注入 tracer。
 
-    面试考点：这里为什么要用 contextvars 而不是把 tracer 放进 state？
+    设计要点：这里为什么要用 contextvars 而不是把 tracer 放进 state？
       → 因为 LangGraph 的 checkpointer 会在每个 super-step 后序列化整个 state，
         而 TraceRecorder 持有 span 列表等不可序列化对象，会直接报错：
             TypeError: Type is not msgpack serializable: TraceRecorder
@@ -724,7 +724,7 @@ class ZhinaoRunner:
         """
         断点续跑：用同一个 thread_id 重新 invoke，LangGraph 会从最后 checkpoint 继续。
 
-        面试考点：这里最容易答错的点是什么？
+        设计要点：这里最容易答错的点是什么？
           → "用 thread_id 就能续跑"不完全对。必须满足：
             ①编译时传了 checkpointer ②状态可序列化 ③图结构没变
             （改了图结构后旧的 checkpoint 可能不兼容，生产中要版本化图）

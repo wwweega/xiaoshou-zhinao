@@ -62,10 +62,16 @@ async def main() -> None:
     print("\n" + md)
     print("\n" + "=" * 70)
     print(f"  报告已保存：{out_path}")
+
+    # 设计要点：门禁必须区分「量纲」——mock 模式下内容类指标本来就是占位常量，
+    # 拿它卡 CI 会把"mock 本来就答不像"误判成"质量退化"（真实事故：
+    # CI 中 c02/c03 关键词命中率不达标 → 红叉，但代码质量并无问题）。
+    # 因此 mock 下门禁降级为提示；真实模型模式下门禁照常严格。
     is_mock = (args.mock or os.getenv("LLM_PROVIDER", "").lower() == "mock")
     gate_ok = report.gate_passed()
     if is_mock and not gate_ok:
         print("  CI 门禁：⚠️ mock 模式不达标（占位文本所致，非质量退化）→ 不阻断 CI")
+        print("            提示：配置真实模型 Key 后重跑 python -m scripts.run_eval 看真实门禁")
         sys.exit(0)
     print(f"  CI 门禁：{'✅ 通过' if gate_ok else '❌ 未通过'}")
     print("=" * 70)

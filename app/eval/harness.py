@@ -1,7 +1,7 @@
 """
 Step 8 · 评测体系（本项目最值钱的部分）
 ============================================================
-面试考点（先说结论）：为什么评测是应届生项目里最稀缺的能力？
+设计要点（先说结论）：为什么评测是应届生项目里最稀缺的能力？
 
 因为 90% 的应届生项目只能演示"能跑通"，但答不上这五个问题：
   1. 你怎么知道改完之后效果变好了？（没有基线，无法对比）
@@ -108,7 +108,7 @@ class EvalReport:
 # ============================================================
 def check_deterministic(case: EvalCase, summary: TaskSummary) -> list[MetricResult]:
     """
-    面试考点：为什么这些"笨"检查最有价值？
+    设计要点：为什么这些"笨"检查最有价值？
       → 因为它们免费、稳定、可进 CI，而且能抓住 80% 的低级问题
         （输出为空、字数不够、出现违禁词、JSON 不合法）。
         先用便宜的检查筛掉低级错误，再把贵的 LLM 打分留给真正需要判断的地方。
@@ -170,12 +170,12 @@ def check_deterministic(case: EvalCase, summary: TaskSummary) -> list[MetricResu
 # ============================================================
 def check_agent_behaviour(case: EvalCase, summary: TaskSummary) -> list[MetricResult]:
     """
-    面试考点：这些是针对「Agent 系统」特有的指标，普通 NLP 项目不会有。
+    设计要点：这些是针对「Agent 系统」特有的指标，普通 NLP 项目不会有。
       ①任务完成率：计划里多少子任务真的完成了
       ②计划合规率：Planner 是否覆盖了期望的角色分工
       ③反思有效性：Critic 打回后分数是否真的提升
       ④成本效率：单位产出花了多少 token
-    这四条指标是面试时展示"我懂 Agent 评测"的直接证据。
+    这四条指标是说明这套评测不是摆设的直接证据。
     """
     out: list[MetricResult] = []
 
@@ -253,7 +253,7 @@ def check_agent_behaviour(case: EvalCase, summary: TaskSummary) -> list[MetricRe
 # ============================================================
 async def judge_with_llm(case: EvalCase, summary: TaskSummary) -> MetricResult:
     """
-    面试考点（必问）：LLM 当裁判有什么问题？你怎么缓解？
+    设计要点（必问）：LLM 当裁判有什么问题？你怎么缓解？
       问题1 位置偏差：偏爱排在前面/更长的答案
       问题2 自我偏好：偏爱和自己风格相近的输出（所以同模型自评不可靠）
       问题3 分数通胀：倾向给 8/10，区分度低
@@ -296,7 +296,7 @@ async def judge_with_llm(case: EvalCase, summary: TaskSummary) -> MetricResult:
 
 def human_calibration(judge_scores: list[float], human_scores: list[float]) -> dict[str, float]:
     """
-    面试考点：怎么证明你的 LLM 裁判是可信的？
+    设计要点：怎么证明你的 LLM 裁判是可信的？
       → 抽 20~50 条人工打分，和 judge 分做相关性/一致性分析。
         平均绝对误差（MAE）< 0.1 通常认为可用。
         说不出这一步，说明你只是"用了 LLM 打分"，而不是"建立了评测体系"。
@@ -325,7 +325,7 @@ class Evaluator:
         with_judge: bool | None = None,
     ) -> EvalReport:
         """
-        面试考点：评测为什么要能"一键跑全套"？
+        设计要点：评测为什么要能"一键跑全套"？
           → 因为评测必须是低摩擦的。如果每次跑评测要手工点 20 次，
             团队就不会跑。能进 CI 的前提是"一条命令跑完"。
         """
@@ -468,12 +468,12 @@ class Evaluator:
 # ============================================================
 def default_test_suite() -> list[EvalCase]:
     """
-    面试考点：测试集怎么设计才不是"自己考自己"？
+    设计要点：测试集怎么设计才不是"自己考自己"？
       ①覆盖典型场景（高频需求）+ 边界场景（模糊需求）+ 高风险场景（合规）
       ②高风险用例单独标 critical，一票否决
       ③保留 holdout：一部分用例在调优时不许看，只在最终验收时跑（防过拟合）
 
-    ⚠️ 关于 mock 模式下的通过率说明（面试时会用到）：
+    ⚠️ 关于 mock 模式下的通过率说明：
       在 LLM_PROVIDER=mock 时，LLM 返回的是固定占位文本，不含业务关键词，
       所以「关键词命中率」这类指标必然大面积失败，整体通过率会偏低。
       这不是评测体系的缺陷，恰恰**证明了评测在起作用**——

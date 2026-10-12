@@ -1,7 +1,7 @@
 """
 Step 1 · 统一配置层
 ============================================================
-面试考点：为什么要有 config 层？
+设计要点：为什么要有 config 层？
   - 12-Factor App 原则：配置与代码分离，同一份镜像可用不同环境变量部署到 dev/staging/prod
   - 密钥绝不进 Git：.env 在 .gitignore 里，只提交 .env.example
   - 类型安全：pydantic-settings 会在启动时就校验配置，而不是等到跑任务时报 KeyError
@@ -102,7 +102,7 @@ class Settings(BaseSettings):
           2. 否则看有没有有效 Key：没有就自动降级 mock，
              保证项目「克隆下来就能跑」，不会因为漏配 Key 直接崩
 
-        面试考点：为什么要有自动降级？
+        设计要点：为什么要有自动降级？
           → 三个真实理由：①CI 里绝不能真的花钱调模型
             ②单测需要确定性输出 ③演示/答辩现场断网或余额不足时不能翻车。
             生产项目里 mock provider 是标配，不是可选项。
@@ -128,7 +128,7 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """
     单例：整个进程只解析一次 .env。
-    面试追问：为什么用 lru_cache 而不是模块级变量？
+    追问：为什么用 lru_cache 而不是模块级变量？
       → 模块级变量在 import 时就执行，测试里不好替换；lru_cache 可显式 clear()
         让单测注入不同配置，同时仍是进程内单例。
     """

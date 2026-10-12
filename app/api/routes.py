@@ -1,7 +1,7 @@
 """
 Step 7 · FastAPI 接口层（SSE 流式 + 生命周期管理）
 ============================================================
-面试考点：
+设计要点：
 
 Q: 为什么 Agent 服务必须用流式（SSE）而不是普通 HTTP 响应？
 A:  Agent 任务动辄几十秒到几分钟。普通请求会：
@@ -80,7 +80,7 @@ async def run_task(req: RunRequest, background: BackgroundTasks):
       - wait=false：立即返回 task_id，任务在后台跑，之后轮询 /task/{id}
       - stream=true：SSE 流式，实时推送每一步进展，适合前端接入
 
-    面试考点：为什么参数要设计成三种模式而不是三个接口？
+    设计要点：为什么参数要设计成三种模式而不是三个接口？
       → 底层执行逻辑完全相同，差异只在"结果投递方式"。
         用参数区分能避免逻辑重复，也不会让 API 面膨胀。
     """
@@ -132,7 +132,7 @@ async def _stream_task(query: str) -> AsyncGenerator[str, None]:
     """
     SSE 生成器。
 
-    面试考点：SSE 的坑有哪些？（答出这些会让面试官觉得你真做过）
+    设计要点：SSE 的坑有哪些？
       ①Nginx 缓冲：必须加 X-Accel-Buffering: no，否则事件被攒着不发
       ②代理超时：网关的 read timeout 要大于任务时长
       ③前端断连检测：客户端关页面后服务端要能感知并取消任务，否则白烧 token
@@ -220,7 +220,7 @@ async def task_events(task_id: str):
 @router.get("/task/{task_id}/deliverable", summary="下载归档的交付物（Markdown）")
 async def download_deliverable(task_id: str):
     """
-    面试考点：为什么交付物要单独落盘 + 提供下载接口？
+    设计要点：为什么交付物要单独落盘 + 提供下载接口？
       - 长任务产物只存内存 → 服务重启即永久丢失（本项目踩过的坑）
       - 归档成 Markdown → 可读、可 diff、可直接交给业务方
       - 单独 endpoint 而非塞进 task 详情 → 避免大文本污染列表接口响应
@@ -243,7 +243,7 @@ async def download_deliverable(task_id: str):
 @router.get("/metrics", summary="运行指标（P95 延迟 / 成本 / 缓存命中）")
 async def get_metrics():
     """
-    面试考点：这四个指标分别回答什么问题？
+    设计要点：这四个指标分别回答什么问题？
       - latency p95/p99：用户体验（平均值会骗人，尾部延迟才是真实体感）
       - tool_error_rate：Agent 稳定性（工具挂了 Agent 就是瞎子）
       - cache_hit_rate：降本效果（缓存是性价比最高的优化）

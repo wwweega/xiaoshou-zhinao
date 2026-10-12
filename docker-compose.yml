@@ -27,7 +27,7 @@ services:
       - ./data:/app/data
       - ./docs:/app/docs
     restart: unless-stopped
-    # 面试考点：为什么要设资源限制？
+    # 设计考虑：为什么要设资源限制？
     #   一个内存泄漏的 Agent 进程能把整台机器拖垮（noisy neighbor）。
     #   K8s/Docker 里必须设 limits，这是生产铁律。
     deploy:

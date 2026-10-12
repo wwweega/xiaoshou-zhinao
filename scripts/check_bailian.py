@@ -10,7 +10,7 @@
     # 或者指定模型
     python scripts/check_bailian.py --model qwen3.8-flash
 
-设计要点（面试可讲）：
+设计要点（关键洞察）：
     上线前的 "smoke test" 不该只 ping 一下 /models，而要**逐项验证项目真正依赖的能力**。
     本项目依赖三项能力，缺任何一个都会在运行中期才暴露：
       1. 基本对话      → 不通说明 Key/地址/模型名有错
