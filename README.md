@@ -12,6 +12,8 @@
   <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
 </p>
 
+![Agent 执行链、任务拆解与运行指标（mock 模式演示运行）](docs/images/demo-execution.png)
+
 ---
 
 ## 一、5 分钟跑起来
