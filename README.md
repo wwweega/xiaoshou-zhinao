@@ -6,6 +6,12 @@
 
 > 项目重点放在可控和可度量上：每一步有状态约束，每次运行有评测结果。
 
+<p align="left">
+  <a href="https://github.com/wwweega/xiaoshou-zhinao/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/wwweega/xiaoshou-zhinao/actions/workflows/ci.yml/badge.svg"></a>
+  <img alt="python" src="https://img.shields.io/badge/python-3.11-blue">
+  <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
+</p>
+
 ---
 
 ## 一、5 分钟跑起来
@@ -193,7 +199,7 @@ xiaoshou-zhinao/
 ├── scripts/
 │   ├── demo.py                  # 一键演示
 │   └── run_eval.py              # 评测入口
-├── tests/test_core.py           # 43 个单测
+├── tests/test_core.py           # 46 个单测
 ├── data/
 │   ├── traces/                  # Trace 归档（指标：token/耗时/成本/span 树）
 │   ├── tasks/                   # 任务业务视图（含 archived_path）
@@ -242,20 +248,6 @@ xiaoshou-zhinao/
 | 累计 token | 467,894 | 所有 trace 求和 |
 | 累计成本 | $0.0537 | 4 次真实长跑中的 3 次有记账 |
 
-### Run 2 逐节点实测（trace `tr_094845f0d766`，21 个 span）
-
-| 节点 | 耗时 | 占墙钟 |
-|---|---|---|
-| `planner` | 8.95 s | 1.3% |
-| `execute`（3 子任务串行）| 279.61 s | 40.0% |
-| `critic`（2 轮）| 46.34 s | 6.6% |
-| **`revise`（重写）** | **363.46 s** | **52.0%** |
-| `finalize` | 0.00 s | 0.0% |
-
-> **洞察**：`writer:revise` 一个节点吃掉该 trace **52% 的时间、51% 的成本**
-> （$0.009032 / $0.017697）。这是"反思循环是最大成本黑洞"的**同 trace 内**证据，
-> 解释了为什么必须设轮次上限 + 「越改越差回滚」——无上限自我批判会烧穿成本。
-
 ### 关键性能指标
 
 | 指标 | 数值 | 来源 / 口径 |
@@ -278,14 +270,13 @@ xiaoshou-zhinao/
 > L1 关键词命中率断言必然部分失败 —— **这恰恰证明评测在正常工作**
 > （它能检测出"输出里没有业务内容"）。具体通过率随用例数变化，以 `docs/eval_report.md`
 > 顶部标注为准；该报告在 mock 运行时会在开头明确标注"非真实测量"。
-> 简历请引用真实模型口径的数字。
 
-### 关键性能洞察（关键洞察）
+### Run 2 逐节点实测与洞察
 
 以 Run 2 的 trace 为准（21 个 span，全部 ok）：
 
 ```
-planner      8.95s  ( 2.5%)
+planner      8.95s  ( 1.3%)
 execute     279.6s  (40.0%)   ← 3 个子任务串行
 critic       46.3s  ( 6.6%)   ← 2 轮评审
 revise      363.5s  (52.0%)   ← 单点最大耗时
@@ -338,7 +329,7 @@ finalize      0.0s  ( 0.0%)
 | **额度/网络超时** | 长文生成耗时远超预期 | `timeout=180s`；区分确定性/瞬时错误，仅后者退避重试 |
 | **`sql_query` 无真实数据** | 模拟环境返回执行计划 | 模型**诚实标注 `$[待回填]` 而非编造数字**——这是事实性约束在生效 |
 
-### 8.3 一句话一句话回答
+### 8.3 一句话总结
 
 > "这个项目的价值不在它有多完美，而在于**每一处失败我都能定位到根因并写进文档**。
 > 比如我发现过三个真 bug：墙钟耗时算错、安全拦截 fail-open、长任务产物丢内存——
